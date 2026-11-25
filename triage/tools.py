@@ -8,6 +8,7 @@ LOGS = json.loads((Path(__file__).parent.parent / "fixtures" / "logs.json").read
 SECRET_PATTERNS = [
     re.compile(r"Bearer\s+[A-Za-z0-9._\-]+"),
     re.compile(r"\b(sk|pk|rk)_(live|test)_[A-Za-z0-9]+"),
+    re.compile(r"\bwhsec_[A-Za-z0-9]+"),
     re.compile(r"://[^/\s:@]+:[^@\s]+@"),
 ]
 
@@ -18,12 +19,13 @@ def redact(text: str) -> str:
     return text
 
 
-def search_logs(service: str = "", level: str = "", since: str = "") -> list[dict]:
+def search_logs(service: str = "", level: str = "", since: str = "", until: str = "") -> list[dict]:
     return [
         row for row in LOGS
         if (not service or row["service"] == service)
         and (not level or row["level"] == level)
         and (not since or row["ts"] >= since)
+        and (not until or row["ts"] <= until)
     ]
 
 
@@ -43,7 +45,7 @@ def create_ticket(title: str, body: str, severity: str, outbox: Path) -> dict:
 SCHEMAS = [
     {
         "name": "search_logs",
-        "description": "Search application logs. Filter by exact service name, level (error|warn|info) and ISO timestamp lower bound. Empty filter means no filter.",
+        "description": "Search application logs. Filter by exact service name, level (error|warn|info) and an ISO timestamp window (since, until). Empty string means no filter. Keep the window tight around the alert time.",
         "strict": True,
         "input_schema": {
             "type": "object",
@@ -51,8 +53,9 @@ SCHEMAS = [
                 "service": {"type": "string"},
                 "level": {"type": "string"},
                 "since": {"type": "string"},
+                "until": {"type": "string"},
             },
-            "required": ["service", "level", "since"],
+            "required": ["service", "level", "since", "until"],
             "additionalProperties": False,
         },
     },

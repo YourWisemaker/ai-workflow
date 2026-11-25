@@ -17,11 +17,11 @@ class ReplayClient:
         self.requests.append(request)
         content = self.turns.pop(0) if self.turns else []
         stop = self.stop_reason if content else "end_turn"
-        return NS(content=content, stop_reason=stop, usage=NS(input_tokens=0, output_tokens=0))
+        return NS(content=content, stop_reason=stop, model="claude-opus-5", usage=NS(input_tokens=1000, output_tokens=200))
 
 
 PAYMENT_TIMEOUT = [
-    [tool_use("search_logs", {"service": "checkout-api", "level": "error", "since": "2026-11-20T00:00:00Z"}, "c1")],
+    [tool_use("search_logs", {"service": "checkout-api", "level": "error", "since": "2026-11-20T00:00:00Z", "until": "2026-11-20T23:59:59Z"}, "c1")],
     [tool_use("get_trace", {"trace_id": "t-100"}, "c2")],
     [tool_use("create_ticket", {
         "title": "payment-gateway timeouts failing checkout",

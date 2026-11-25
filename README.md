@@ -1,6 +1,8 @@
 # ai-workflow
 
-An incident triage agent built on Claude. Feed it an alert and it searches logs, follows traces across services and returns a verdict tied to evidence. It can also file a ticket, but only when writes are switched on.
+[![tests](https://github.com/YourWisemaker/ai-workflow/actions/workflows/test.yml/badge.svg)](https://github.com/YourWisemaker/ai-workflow/actions/workflows/test.yml)
+
+An incident triage agent built on Claude. Feed it an alert and it searches logs, follows traces across services and returns a verdict tied to evidence. It can also file a ticket, but only when writes are switched on and a person approves it.
 
 This repo also holds my answers to two portfolio questions: [GitHub and representative repositories](#github-and-representative-repositories) and [Strongest production AI workflow](#strongest-production-ai-workflow).
 
@@ -11,10 +13,10 @@ This repo also holds my answers to two portfolio questions: [GitHub and represen
 ```bash
 python3 -m unittest -v tests.test_agent                            # guardrail tests, no API key
 python3 -m triage --replay "checkout error rate above 5%"          # full loop with scripted model replies
-pip install anthropic && export ANTHROPIC_API_KEY=...
+pip install anthropic && cp .env.example .env                    # then put your key in .env
 python3 -m triage "checkout error rate above 5%"                   # live, dry-run (no tickets)
-python3 -m triage --allow-write "checkout error rate above 5%"     # live, may file a ticket
-python3 -m evals.run_eval                                          # live eval, costs API credits
+python3 -m triage --allow-write "checkout error rate above 5%"     # live, asks you before filing a ticket
+python3 -m evals.run_eval                                          # live eval on 20 incidents, writes evals/results.md
 ```
 
 Run logs go to `out/runs.jsonl`. Tickets go to `out/tickets.jsonl`.
@@ -28,14 +30,16 @@ flowchart TD
     C -->|tool_use| D{Permission gate}
     D -->|read: search_logs, get_trace| E[Log store<br/>fixtures/logs.json]
     E --> H[Redact secrets] -->|tool_result| C
-    D -->|write: create_ticket<br/>with --allow-write| R[Redact ticket fields] --> F[Ticket outbox<br/>out/tickets.jsonl] -->|ticket id| C
+    D -->|write: create_ticket<br/>with --allow-write| R[Redact ticket fields] --> P{On-call approves?}
+    P -->|yes| F[Ticket outbox<br/>out/tickets.jsonl] -->|ticket id| C
+    P -->|no| G
     D -->|write in dry-run| G[Denied, is_error] -->|tool_result| C
     C -->|submit_triage| I{Grounding check:<br/>service + traces fetched?}
     I -->|no| J[is_error, model corrects] --> C
     I -->|yes| K[Verdict, status ok]
     C -->|refusal / max_tokens / no tool call| L[Escalate to human]
     B -->|turn 8 reached| L
-    B -. every call and tool .-> M[(out/runs.jsonl<br/>tokens, latency, stop_reason)]
+    B -. every call and tool .-> M[(out/runs.jsonl<br/>model, tokens, cost, latency, stop_reason)]
 ```
 
 Full write-up with the diagram rendered as an image: [docs/architecture.md](docs/architecture.md).
@@ -45,8 +49,9 @@ Full write-up with the diagram rendered as an image: [docs/architecture.md](docs
 | `triage/agent.py` | The tool loop, permission gate, grounding check, turn cap, run log |
 | `triage/tools.py` | Tool functions, JSON schemas (`strict: true`), secret redaction |
 | `triage/replay.py` | Scripted client so tests and the demo run without an API key |
-| `tests/test_agent.py` | One test per guardrail |
-| `evals/` | Labelled cases and the live scoring script |
+| `tests/test_agent.py` | One test per guardrail, run in CI on every push |
+| `evals/` | 20 labelled incidents, live scoring script, `results.md` report |
+| `.github/workflows/test.yml` | CI: guardrail tests and the replay demo, no secrets needed |
 
 ## GitHub and representative repositories
 
@@ -76,11 +81,11 @@ Most of my production work belongs to employers and lives in private repos. I do
 
 **Quality, permissions, monitoring, failures.**
 
-- Quality: `evals/cases.json` holds labelled incidents (alert, expected root-cause service, expected severity). `evals/run_eval.py` scores exact matches. The grounding check rejects any verdict that names a service or trace the agent never fetched.
-- Permissions: read and write tools sit in separate sets. Writes are off unless `--allow-write` is passed. A denied write goes back to the model as `is_error`, so it carries on instead of crashing.
-- Monitoring: every model call writes stop reason, input and output tokens and latency to `out/runs.jsonl`. Every tool call writes its name and error flag. The finish event records the status (`ok` or `escalate`) and why.
+- Quality: `evals/cases.json` holds 20 labelled incidents (alert, expected root-cause service, expected severity). They include cases where the alert fires on one service and the cause is a hop away, cases where the logs show nothing wrong and the right answer is "not enough evidence", and one log line that tries a prompt injection. `evals/run_eval.py` scores exact matches and writes pass rate, escalation rate, turns, tokens and cost per run to `evals/results.md`. The grounding check rejects any verdict that names a service or trace the agent never fetched.
+- Permissions: read and write tools sit in separate sets. Writes are off unless `--allow-write` is passed, and even then each ticket needs a yes from a person. The approver is injected into `triage()`, and the default denies everything, so a forgotten approver can't file anything. A denied or declined write goes back to the model as `is_error`, so it carries on instead of crashing. The system prompt treats log text as untrusted data.
+- Monitoring: every model call writes the serving model, stop reason, tokens, cost and latency to `out/runs.jsonl`. Every tool call writes its name and error flag. The finish event records the status (`ok` or `escalate`), why, and totals for turns, tokens and cost. Cost is priced per response because a refusal fallback can be served by a different model.
 - Failures: refusal, `max_tokens`, ending without a verdict or reaching 8 turns all return `escalate` for a human. Nothing is guessed. A tool that throws becomes an error result the model can route around. The SDK retries 429 and 5xx on its own. Refusals fall back to another model on the server side (`fallbacks: "default"`).
 
 **Failure turned into a guardrail.** Production logs carry secrets: bearer tokens in auth headers, credentials inside database URLs. Fixture trace `t-100` has one. Without a guard, the token goes to the model in a tool result and the model copies it into the ticket body, where everyone with tracker access can read it. Now `redact()` runs on every tool result before the model sees it, and again on every ticket field before it is written. `test_secrets_never_reach_the_model_or_the_ticket` keeps it fixed.
 
-**Outcome.** Offline, all 6 guardrail tests pass, and the replay demo runs the full loop end to end. This is not production-ready yet. Still to do: run the live eval and publish accuracy and cost per run, grow the eval set from real postmortems, swap the fixtures for a real log backend, and add an approval step before tickets are filed in a shared tracker.
+**Outcome.** Offline, all 12 tests pass in CI and the replay demo runs the full loop end to end. This is not production-ready yet. Still to do, tracked in [issues](https://github.com/YourWisemaker/ai-workflow/issues): run the live eval and publish accuracy and cost per run (#1), swap the fixtures for a real log backend (#4), and connect the ticket tool to Linear (#5).

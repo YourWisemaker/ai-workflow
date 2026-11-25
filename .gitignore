@@ -1,3 +1,8 @@
 out/
 __pycache__/
 .venv/
+.env
+.env.*
+!.env.example
+.playwright-mcp/
+.DS_Store

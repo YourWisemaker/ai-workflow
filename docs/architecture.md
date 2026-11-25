@@ -27,10 +27,12 @@ sequenceDiagram
     T-->>L: 3 rows, one with a Bearer token
     L-->>M: rows with token replaced by [REDACTED]
     M->>L: create_ticket(...)
-    alt --allow-write
-        L->>T: redact fields, write ticket
+    alt --allow-write and on-call says yes
+        L->>U: show redacted ticket, ask
+        U-->>L: yes
+        L->>T: write ticket
         T-->>L: TRI-1
-    else dry-run
+    else dry-run or on-call says no
         L-->>M: denied, is_error
     end
     M->>L: submit_triage(payment-gateway, high, [t-100])
@@ -43,11 +45,15 @@ sequenceDiagram
 | Rule | Code | Test |
 |---|---|---|
 | Writes off by default | `Run.call_tool`, `WRITE_TOOLS` in `triage/agent.py` | `test_write_tool_denied_in_dry_run` |
+| A person approves every ticket, default deny | `approve` arg, `deny_all`, `ask_on_call` in `triage/__main__.py` | `test_reviewer_can_decline_ticket`, `test_no_reviewer_means_no_ticket` |
 | Secrets never reach model or ticket | `tools.redact`, called in `Run.call_tool` | `test_secrets_never_reach_the_model_or_the_ticket` |
 | Verdict must cite fetched evidence | `Run.check_verdict` | `test_ungrounded_verdict_is_rejected` |
 | Bounded run | `MAX_TURNS` in the `triage()` loop | `test_turn_cap_escalates` |
 | Refusal or truncation goes to a human | stop_reason check in `triage()` | `test_refusal_escalates` |
-| Every call is observable | `Run.log` writes to `out/runs.jsonl` | checked in `test_write_tool_denied_in_dry_run` |
+| Every call is observable, with cost | `Run.log`, `call_cost` | `test_usage_and_cost_are_reported` |
+| Known secret shapes are caught | `SECRET_PATTERNS` in `triage/tools.py` | `test_known_secret_shapes` |
+| Log text can't steer the agent | system prompt rule, injection case in `evals/cases.json` | live eval only |
+| Eval report is computed right | `score`, `report` in `evals/run_eval.py` | `test_report_scores_root_cause_and_severity` |
 
 ## Choices
 

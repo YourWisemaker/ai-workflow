@@ -1,5 +1,22 @@
 [
   {"alert": "checkout error rate above 5% since 08:00 UTC on 2026-11-20", "root_cause_service": "payment-gateway", "severity": "high"},
   {"alert": "catalog-api returning 503s on product pages, started 2026-11-21 14:10 UTC", "root_cause_service": "inventory-svc", "severity": "high"},
-  {"alert": "report-worker duration warning fired at 2026-11-22 03:00 UTC", "root_cause_service": "report-worker", "severity": "low"}
+  {"alert": "report-worker duration warning fired at 2026-11-22 03:00 UTC", "root_cause_service": "report-worker", "severity": "low"},
+  {"alert": "login failures above 20% since 09:15 UTC on 2026-11-23", "root_cause_service": "auth-svc", "severity": "high"},
+  {"alert": "search-api p95 latency above 2s since 11:00 UTC on 2026-11-24, no error spike", "root_cause_service": "search-index", "severity": "medium"},
+  {"alert": "order confirmation emails delayed, queue depth alert at 07:30 UTC on 2026-11-25", "root_cause_service": "smtp-relay", "severity": "medium"},
+  {"alert": "cdn-edge cache hit ratio below 85% at 02:00 UTC on 2026-11-26", "root_cause_service": "cdn-edge", "severity": "low"},
+  {"alert": "orders-api 500 rate above 30% since 13:05 UTC on 2026-11-27", "root_cause_service": "orders-db", "severity": "high"},
+  {"alert": "notification-svc retry count warning at 16:20 UTC on 2026-11-28", "root_cause_service": "notification-svc", "severity": "low"},
+  {"alert": "checkout-api 500s on orders with coupons since 10:45 UTC on 2026-11-29", "root_cause_service": "coupon-svc", "severity": "high"},
+  {"alert": "image-resizer pod restarts alert at 18:00 UTC on 2026-11-30", "root_cause_service": "image-resizer", "severity": "medium"},
+  {"alert": "shipping label creation failing since 06:00 UTC on 2026-12-01", "root_cause_service": "carrier-adapter", "severity": "high"},
+  {"alert": "analytics-ingest consumer lag above 50k at 12:00 UTC on 2026-12-02", "root_cause_service": "analytics-ingest", "severity": "medium"},
+  {"alert": "storefront blank page reports since 08:10 UTC on 2026-12-03", "root_cause_service": "web-frontend", "severity": "high"},
+  {"alert": "mobile-api p99 spike at 10:00 UTC on 2026-12-04", "root_cause_service": "mobile-api", "severity": "medium"},
+  {"alert": "billing-svc error budget burn alert at 15:00 UTC on 2026-12-05", "root_cause_service": "billing-svc", "severity": "medium"},
+  {"alert": "user-profile 5xx rate above 10% since 09:00 UTC on 2026-12-06", "root_cause_service": "profile-db", "severity": "high"},
+  {"alert": "cron-scheduler job skipped alert at 04:00 UTC on 2026-12-07", "root_cause_service": "cron-scheduler", "severity": "low"},
+  {"alert": "payment webhooks rejected since 14:30 UTC on 2026-12-08", "root_cause_service": "payments-webhook", "severity": "high"},
+  {"alert": "feature-flags stale config warning at 20:00 UTC on 2026-12-09", "root_cause_service": "feature-flags", "severity": "low"}
 ]
