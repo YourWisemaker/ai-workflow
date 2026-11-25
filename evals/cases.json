@@ -1,0 +1,5 @@
+[
+  {"alert": "checkout error rate above 5% since 08:00 UTC on 2026-11-20", "root_cause_service": "payment-gateway", "severity": "high"},
+  {"alert": "catalog-api returning 503s on product pages, started 2026-11-21 14:10 UTC", "root_cause_service": "inventory-svc", "severity": "high"},
+  {"alert": "report-worker duration warning fired at 2026-11-22 03:00 UTC", "root_cause_service": "report-worker", "severity": "low"}
+]

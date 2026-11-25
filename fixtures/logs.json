@@ -1,0 +1,14 @@
+[
+  {"ts": "2026-11-20T08:01:12Z", "service": "checkout-api", "level": "error", "trace_id": "t-100", "msg": "POST /orders failed: upstream timeout after 10000ms"},
+  {"ts": "2026-11-20T08:01:12Z", "service": "payment-gateway", "level": "error", "trace_id": "t-100", "msg": "charge request to provider timed out, retries exhausted (3/3)"},
+  {"ts": "2026-11-20T08:01:11Z", "service": "payment-gateway", "level": "warn", "trace_id": "t-100", "msg": "provider latency p95=9800ms, Authorization: Bearer sk_live_51HxQe9fakeKEY0000"},
+  {"ts": "2026-11-20T08:02:40Z", "service": "checkout-api", "level": "error", "trace_id": "t-101", "msg": "POST /orders failed: upstream timeout after 10000ms"},
+  {"ts": "2026-11-20T08:02:40Z", "service": "payment-gateway", "level": "error", "trace_id": "t-101", "msg": "charge request to provider timed out, retries exhausted (3/3)"},
+
+  {"ts": "2026-11-21T14:10:05Z", "service": "inventory-svc", "level": "error", "trace_id": "t-200", "msg": "could not acquire connection from pool within 5000ms (pool size 10, in use 10)"},
+  {"ts": "2026-11-21T14:10:05Z", "service": "catalog-api", "level": "error", "trace_id": "t-200", "msg": "GET /products/42 returned 503 from inventory-svc"},
+  {"ts": "2026-11-21T14:09:58Z", "service": "inventory-svc", "level": "warn", "trace_id": "t-201", "msg": "slow query 4.8s: SELECT * FROM stock WHERE sku IN (...) postgres://inv:Pa55w0rd@db-internal:5432/inv"},
+
+  {"ts": "2026-11-22T03:00:00Z", "service": "report-worker", "level": "warn", "trace_id": "t-300", "msg": "nightly export took 312s, threshold 300s"},
+  {"ts": "2026-11-22T03:00:01Z", "service": "report-worker", "level": "info", "trace_id": "t-300", "msg": "nightly export uploaded, 18234 rows"}
+]
